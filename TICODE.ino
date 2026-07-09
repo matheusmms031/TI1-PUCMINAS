@@ -1,10 +1,4 @@
 #include <Wire.h>
-#include <LiquidCrystal_I2C.h>
-
-#define col 16
-#define lin 2
-#define ende 0x20
-LiquidCrystal_I2C lcd(ende, col, lin);
 
 const int ledVermelho = 2;
 const int ledAmarelo  = 3;
@@ -22,9 +16,6 @@ void setup() {
   pinMode(ledAzul, OUTPUT);
   pinMode(botao, INPUT_PULLUP);
 
-  lcd.init();
-  lcd.backlight();
-
   randomSeed(analogRead(0));
 
   mostrarMenu();
@@ -34,22 +25,21 @@ void loop() {
   if (Serial.available() > 0) {
     String comando = Serial.readStringUntil('\n');
     comando.trim();
-    comando.toLowerCase();
 
-    if (comando == "jogo 1") {
+    if (comando == "1") {
       jogar1();
       mostrarMenu();
     }
-    else if (comando == "jogo 2") {
+    else if (comando == "2") {
       jogar2();
       mostrarMenu();
     }
-    else if (comando == "jogo 3") {
+    else if (comando == "3") {
       jogar3();
       mostrarMenu();
     }
     else {
-      Serial.println("Comando invalido. Digite: jogo 1, jogo 2 ou jogo 3");
+      Serial.println("Opção inválida! Digite apenas o número: 1, 2 ou 3.");
     }
   }
 }
@@ -59,54 +49,68 @@ void mostrarMenu() {
   digitalWrite(ledAmarelo, LOW);
   digitalWrite(ledAzul, LOW);
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Escolha um jogo");
-  lcd.setCursor(0, 1);
-  lcd.print("no Serial");
-
   Serial.println();
-  Serial.println("=== MENU ===");
-  Serial.println("Digite 'jogo 1', 'jogo 2' ou 'jogo 3' e aperte Enter");
+  Serial.println("======= MENU DE JOGOS =======");
+  Serial.println("Escolha um jogo:");
+  Serial.println("Precisao (1), Reflexo (2) e Potenciometro (3).");
+  Serial.println("-----------------------------");
+  Serial.println("Digite apenas o numero correspondente e aperte Enter.");
 }
 
 void jogar1() {
-  long tempoEspera = random(3, 20);
-  int segundos = 0;
+  // Sorteia um tempo alvo entre 5 e 15 segundos
+  long tempoAlvo = random(5, 16); 
 
-  Serial.println("Jogo 1 iniciado!");
+  Serial.println("\n[Jogo 1: Precisão Iniciado!]");
+  Serial.print("Seu alvo: ");
+  Serial.print(tempoAlvo);
+  Serial.println(" segundos.");
+  Serial.println("PREPARE-SE... O LED vai acender e sua contagem mental começa!");
+  delay(2000); // Pequena pausa para o jogador se preparar antes do LED acender
 
-  while (segundos < tempoEspera) {
-    segundos++;
-    lcd.setCursor(0, 0);
-    lcd.print("Tempo:          ");
-    lcd.setCursor(0, 1);
-    lcd.print(segundos);
-    lcd.print(" seg    ");
-    delay(1000);
-  }
-
+  // O LED acende e o seu tempo começa a contar AGORA
   digitalWrite(ledVermelho, HIGH);
-  unsigned long tempoInicio = millis();
+  unsigned long tempoInicio = millis(); 
 
+  Serial.println("\n>>> VALENDO! Conte mentalmente e aperte o botão! <<<");
+
+  // Espera o jogador apertar o botão (enquanto isso a tela fica limpa para não dar spoiler)
   while (digitalRead(botao) == HIGH) {
   }
 
   unsigned long tempoFinal = millis();
-  digitalWrite(ledVermelho, LOW);
+  digitalWrite(ledVermelho, LOW); // Apaga o LED assim que aperta
 
-  float tempoReacao = (tempoFinal - tempoInicio) / 1000.0;
+  // Calcula exatamente quanto tempo você demorou na contagem mental
+  float seuTempoMental = (tempoFinal - tempoInicio) / 1000.0;
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Tempo Final:");
-  lcd.setCursor(0, 1);
-  lcd.print(tempoReacao);
-  lcd.print(" seg");
+  Serial.print("\nVocê apertou o botão em: ");
+  Serial.print(seuTempoMental);
+  Serial.println(" segundos.");
 
-  Serial.print("Jogo 1 finalizado. Tempo: ");
-  Serial.print(tempoReacao);
-  Serial.println(" seg");
+  // Calcula a diferença entre o seu tempo e o alvo sorteado
+  float diferenca = abs(seuTempoMental - tempoAlvo);
+
+  // Se a diferença for menor ou igual a 0.5 segundos, você ganha!
+  if (diferenca <= 0.5) {
+    Serial.println("===============================");
+    Serial.println("  PARABÉNS! VOCÊ ACERTOU!!! :D ");
+    Serial.println("===============================");
+    // Pisca o LED azul para comemorar
+    for(int i=0; i<5; i++){
+      digitalWrite(ledAzul, HIGH); delay(100);
+      digitalWrite(ledAzul, LOW);  delay(100);
+    }
+  } else {
+    Serial.println("===============================");
+    Serial.println("  VOCÊ ERROU! Tente de novo.   ");
+    Serial.println("===============================");
+    // Pisca o LED vermelho indicando erro
+    for(int i=0; i<5; i++){
+      digitalWrite(ledVermelho, HIGH); delay(100);
+      digitalWrite(ledVermelho, LOW);  delay(100);
+    }
+  }
 
   delay(4000);
 }
@@ -116,21 +120,13 @@ void jogar2() {
   digitalWrite(ledAmarelo, LOW);
   digitalWrite(ledAzul, LOW);
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Jogo de Reacao");
-  lcd.setCursor(0, 1);
-  lcd.print("Aperte o botao!");
+  Serial.println("\n[Jogo 2: Reflexo - Aperte o botão!]");
   delay(2000);
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Prepare-se...");
+  Serial.println("Prepare-se...");
   delay(random(1000, 3000));
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Prestando atencao");
+  Serial.println("Prestando atenção...");
 
   digitalWrite(leds2[0], HIGH);
   delay(random(1000, 3000));
@@ -141,9 +137,7 @@ void jogar2() {
   digitalWrite(leds2[2], HIGH);
   unsigned long tempoInicial = millis();
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("JA!!! GO!!!");
+  Serial.println("JÁ!!! GO!!!");
 
   while (digitalRead(botao) == HIGH) {
   }
@@ -155,12 +149,9 @@ void jogar2() {
   digitalWrite(ledAmarelo, LOW);
   digitalWrite(ledAzul, LOW);
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Tempo de Reacao:");
-  lcd.setCursor(0, 1);
-  lcd.print(tempoReacao);
-  lcd.print(" ms");
+  Serial.print("Tempo de Reação: ");
+  Serial.print(tempoReacao);
+  Serial.println(" ms");
 
   Serial.print("Jogo 2 finalizado. Tempo: ");
   Serial.print(tempoReacao);
@@ -173,14 +164,10 @@ void jogar3() {
   int alvo = random(0, 1024);
   int margem = 50;
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Alvo:");
-  lcd.print(alvo);
-  lcd.setCursor(0, 1);
-  lcd.print("Gire o potenc.");
-
-  Serial.println("Jogo 3 iniciado!");
+  Serial.println("\n[Jogo 3: Potenciômetro Iniciado!]");
+  Serial.print("Alvo: ");
+  Serial.print(alvo);
+  Serial.println(" - Gire o potenc.");
 
   unsigned long tempoInicio = millis();
 
@@ -190,12 +177,9 @@ void jogar3() {
   unsigned long tempoFinal = millis();
   float tempoReacao = (tempoFinal - tempoInicio) / 1000.0;
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Acertou!");
-  lcd.setCursor(0, 1);
-  lcd.print(tempoReacao);
-  lcd.print(" seg");
+  Serial.print("Acertou! Tempo: ");
+  Serial.print(tempoReacao);
+  Serial.println(" seg");
 
   Serial.print("Jogo 3 finalizado. Tempo: ");
   Serial.print(tempoReacao);
