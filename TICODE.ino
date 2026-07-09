@@ -6,6 +6,9 @@ const int ledAzul     = 4;
 const int botao       = 5;
 const int potenciometro = A1;
 
+// Configuração do Filtro de Média Móvel
+const int TAMANHO_FILTRO = 10; 
+
 int leds2[3] = {ledVermelho, ledAmarelo, ledAzul};
 
 void setup() {
@@ -58,7 +61,6 @@ void mostrarMenu() {
 }
 
 void jogar1() {
-  // Sorteia um tempo alvo entre 5 e 15 segundos
   long tempoAlvo = random(5, 16); 
 
   Serial.println("\n[Jogo 1: Precisão Iniciado!]");
@@ -66,37 +68,31 @@ void jogar1() {
   Serial.print(tempoAlvo);
   Serial.println(" segundos.");
   Serial.println("PREPARE-SE... O LED vai acender e sua contagem mental começa!");
-  delay(2000); // Pequena pausa para o jogador se preparar antes do LED acender
+  delay(2000); 
 
-  // O LED acende e o seu tempo começa a contar AGORA
   digitalWrite(ledVermelho, HIGH);
   unsigned long tempoInicio = millis(); 
 
   Serial.println("\n>>> VALENDO! Conte mentalmente e aperte o botão! <<<");
 
-  // Espera o jogador apertar o botão (enquanto isso a tela fica limpa para não dar spoiler)
   while (digitalRead(botao) == HIGH) {
   }
 
   unsigned long tempoFinal = millis();
-  digitalWrite(ledVermelho, LOW); // Apaga o LED assim que aperta
+  digitalWrite(ledVermelho, LOW); 
 
-  // Calcula exatamente quanto tempo você demorou na contagem mental
   float seuTempoMental = (tempoFinal - tempoInicio) / 1000.0;
 
   Serial.print("\nVocê apertou o botão em: ");
   Serial.print(seuTempoMental);
   Serial.println(" segundos.");
 
-  // Calcula a diferença entre o seu tempo e o alvo sorteado
   float diferenca = abs(seuTempoMental - tempoAlvo);
 
-  // Se a diferença for menor ou igual a 0.5 segundos, você ganha!
   if (diferenca <= 0.5) {
     Serial.println("===============================");
     Serial.println("  PARABÉNS! VOCÊ ACERTOU!!! :D ");
     Serial.println("===============================");
-    // Pisca o LED azul para comemorar
     for(int i=0; i<5; i++){
       digitalWrite(ledAzul, HIGH); delay(100);
       digitalWrite(ledAzul, LOW);  delay(100);
@@ -105,7 +101,6 @@ void jogar1() {
     Serial.println("===============================");
     Serial.println("  VOCÊ ERROU! Tente de novo.   ");
     Serial.println("===============================");
-    // Pisca o LED vermelho indicando erro
     for(int i=0; i<5; i++){
       digitalWrite(ledVermelho, HIGH); delay(100);
       digitalWrite(ledVermelho, LOW);  delay(100);
@@ -160,6 +155,16 @@ void jogar2() {
   delay(4000);
 }
 
+// Função que calcula a média móvel em tempo real
+int lerPotenciometroFiltrado() {
+  long soma = 0;
+  for (int i = 0; i < TAMANHO_FILTRO; i++) {
+    soma += analogRead(potenciometro);
+    delay(1); // Pequeno intervalo para estabilização do ADC
+  }
+  return soma / TAMANHO_FILTRO;
+}
+
 void jogar3() {
   int alvo = random(0, 1024);
   int margem = 50;
@@ -171,7 +176,11 @@ void jogar3() {
 
   unsigned long tempoInicio = millis();
 
-  while (abs(analogRead(potenciometro) - alvo) > margem) {
+  // Substituído o analogRead direto pela função filtrada
+  while (abs(lerPotenciometroFiltrado() - alvo) > margem) {
+    // Opcional: imprimir o valor atual para ajudar o jogador
+    // Serial.print("Atual: "); Serial.println(lerPotenciometroFiltrado());
+    // delay(100); 
   }
 
   unsigned long tempoFinal = millis();
